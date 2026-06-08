@@ -1,7 +1,10 @@
 #!/bin/sh
 # Compare bench-v8 scores across multiple qjs binaries and print a markdown table.
-# Usage: bench_compare.sh <qjs1> [qjs2 ...]
+# Usage: bench_compare.sh <qjs1[:label]> [qjs2[:label] ...]
+# Label is optional; if omitted the version string embedded in the binary is used,
+# falling back to the path.
 # Example: bench_compare.sh /tmp/qjs-prev/qjs ./qjs
+# Example: bench_compare.sh /path/to/mtqjs:mtqjs-master ./qjs:2026-06-04
 
 set -e
 
@@ -26,10 +29,16 @@ version_of() {
 tmps=""
 labels=""
 ncols=0
-for qjs in "$@"; do
+for arg in "$@"; do
+    # Support optional "path:label" syntax; split on the first colon only
+    qjs="${arg%%:*}"
+    label="${arg#*:}"
+    [ "$qjs" = "$label" ] && label=""   # no colon → clear label, use auto-detect
     if [ ! -x "$qjs" ]; then echo "not executable: $qjs" >&2; exit 1; fi
-    label=$(version_of "$qjs")
-    [ -z "$label" ] && label="$qjs"
+    if [ -z "$label" ]; then
+        label=$(version_of "$qjs")
+        [ -z "$label" ] && label="$qjs"
+    fi
     tmp=$(mktemp)
     tmps="$tmps $tmp"
     labels="${labels}${labels:+,}${label}"
