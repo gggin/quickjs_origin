@@ -43,19 +43,20 @@ bash bench_compare.sh -b mtqjs-master \
 
 ## 测试结果（2026-06-08）
 
-测试环境：macOS ARM64 (Apple Silicon)
+测试环境：macOS ARM64 (Apple Silicon)  
+基准列：**mtqjs-master**，其余列显示分数及相对基准的百分比变化。
 
-| 测试项       | 2025-09-13 |        2026-06-04 |      mtqjs-master |         mtqjs-opt |
-| ------------ | ---------: | ----------------: | ----------------: | ----------------: |
-| Richards     |       1234 |      1341 (+8.7%) |     1811 (+46.8%) |     1799 (+45.8%) |
-| DeltaBlue    |       1328 |     1526 (+14.9%) |     1878 (+41.4%) |     1795 (+35.2%) |
-| Crypto       |       1096 |      1181 (+7.8%) |     2134 (+94.7%) |     2120 (+93.4%) |
-| RayTrace     |       1649 |    3310 (+100.7%) |     3256 (+97.5%) |     2779 (+68.5%) |
-| EarleyBoyer  |       2751 |     4148 (+50.8%) |     4711 (+71.2%) |     3633 (+32.1%) |
-| RegExp       |        341 |      662 (+94.1%) |      444 (+30.2%) |      433 (+27.0%) |
-| Splay        |       3061 |    6919 (+126.0%) |     6022 (+96.7%) |    7269 (+137.5%) |
-| NavierStokes |       1723 |     2161 (+25.4%) |    3589 (+108.3%) |    4060 (+135.6%) |
-| **SCORE**    |   **1399** | **2063 (+47.5%)** | **2391 (+70.9%)** | **2335 (+66.9%)** |
+| 测试项 | 2025-09-13 | 2026-06-04 | mtqjs-master | mtqjs-opt |
+|--------|-------:|-------:|-------:|-------:|
+| Richards | 1159 (-35.5%) | 1311 (-27.0%) | 1797 | 1758 (-2.2%) |
+| DeltaBlue | 1199 (-29.8%) | 1461 (-14.4%) | 1707 | 1772 (+3.8%) |
+| Crypto | 1029 (-51.1%) | 1122 (-46.7%) | 2105 | 2112 (+0.3%) |
+| RayTrace | 1579 (-50.6%) | 3237 (+1.2%) | 3198 | 2724 (-14.8%) |
+| EarleyBoyer | 2713 (-41.7%) | 3996 (-14.1%) | 4650 | 3651 (-21.5%) |
+| RegExp | 327 (-23.8%) | 616 (+43.6%) | 429 | 426 (-0.7%) |
+| Splay | 2928 (-52.0%) | 6576 (+7.7%) | 6106 | 7163 (+17.3%) |
+| NavierStokes | 1645 (-54.3%) | 1997 (-44.5%) | 3597 | 4046 (+12.5%) |
+| **SCORE** | **1327 (-43.3%)** | **1968 (-16.0%)** | **2342** | **2309 (-1.4%)** |
 
 > 分数为 V8 Benchmark Suite v7 规则下的几何平均值，**分数越高越好**。
 
@@ -65,19 +66,19 @@ bash bench_compare.sh -b mtqjs-master \
 
 ### quickjs 版本间对比（2025-09-13 → 2026-06-04）
 
-总分提升 **+47.5%**，主要来自：
+总分提升 **+48.3%**，主要来自：
 
-- **Splay +126%**、**RayTrace +101%**、**RegExp +94%**：新版本在对象内存分配（custom malloc for small blocks）和整数/浮点混合运算（faster add/sub/mul）上有大幅优化。
-- Richards / DeltaBlue / NavierStokes：稳步提升（+8%～+25%）。
+- **Splay +125%**、**RayTrace +105%**、**RegExp +88%**：新版本在对象内存分配（custom malloc for small blocks）和整数/浮点混合运算（faster add/sub/mul）上有大幅优化。
+- Richards / DeltaBlue / NavierStokes：稳步提升（+13%～+21%）。
 
 ### mtqjs 与 quickjs 2026-06-04 对比
 
-| 维度             |           mtqjs-master            |           mtqjs-opt            |
-| ---------------- | :-------------------------------: | :----------------------------: |
-| 总分 vs qjs-2026 |            **+15.9%**             |           **+13.2%**           |
-| 优势项           | Crypto、NavierStokes、EarleyBoyer |  Crypto、NavierStokes、Splay   |
-| 弱势项           |  RegExp (-33%)、RayTrace (-1.6%)  | RegExp (-34%)、RayTrace (-16%) |
+| 维度             |           mtqjs-master            |              mtqjs-opt              |
+| ---------------- | :-------------------------------: | :---------------------------------: |
+| 总分 vs qjs-2026 |            **+19.0%**             |             **+17.3%**              |
+| 优势项           | Crypto (+88%)、NavierStokes (+80%)、EarleyBoyer (+16%) | Crypto (+88%)、NavierStokes (+103%)、Splay (+9%) |
+| 弱势项           |  RegExp (-30%)、RayTrace (-1.2%)  |    RegExp (-31%)、RayTrace (-16%)   |
 
-- **Crypto +94%、NavierStokes +108%**：mtqjs 在数值密集型场景有显著优势，推测受益于多线程或 JIT 相关优化。
-- **RegExp** 是 mtqjs 的相对短板，两个变体均比 qjs-2026 低约 33%。
-- **mtqjs-master vs mtqjs-opt**：两者总分相近（2391 vs 2335），master 在 EarleyBoyer 上更强，opt 在 Splay / NavierStokes 上更强。
+- **Crypto +88%、NavierStokes +80%～+103%**：mtqjs 在数值密集型场景有显著优势，推测受益于多线程或 JIT 相关优化。
+- **RegExp** 是 mtqjs 的相对短板，两个变体均比 qjs-2026 低约 30%。
+- **mtqjs-master vs mtqjs-opt**：总分相近（2342 vs 2309），master 在 EarleyBoyer 上更强，opt 在 Splay / NavierStokes 上更强。
