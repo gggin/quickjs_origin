@@ -1,17 +1,28 @@
 #!/bin/sh
 # Compare bench-v8 scores across multiple qjs binaries and print a markdown table.
-# Usage: bench_compare.sh <qjs1[:label]> [qjs2[:label] ...]
-# Label is optional; if omitted the version string embedded in the binary is used,
-# falling back to the path.
+# Usage: bench_compare.sh [-b <baseline_label>] <qjs1[:label]> [qjs2[:label] ...]
+#
+# -b <label>  Use the column with this label as the baseline (default: first column).
+# Label is optional per binary; if omitted the version string embedded in the binary
+# is used, falling back to the path.
+#
 # Example: bench_compare.sh /tmp/qjs-prev/qjs ./qjs
-# Example: bench_compare.sh /path/to/mtqjs:mtqjs-master ./qjs:2026-06-04
+# Example: bench_compare.sh -b mtqjs-master /old/qjs ./qjs /path/to/mtqjs:mtqjs-master
 
 set -e
 
 BENCH=tests/bench-v8/combined.js
 
+baseline=""
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -b|--baseline) baseline="$2"; shift 2 ;;
+        *) break ;;
+    esac
+done
+
 if [ "$#" -lt 1 ]; then
-    echo "Usage: $0 <qjs> [qjs2 ...]" >&2
+    echo "Usage: $0 [-b baseline_label] <qjs[:label]> [qjs2[:label] ...]" >&2
     exit 1
 fi
 
@@ -52,7 +63,7 @@ done
 trap "rm -f $tmps" EXIT
 
 # Feed all tmpfiles to awk with FILE <n> markers so it knows which column each
-# result belongs to. Percentages are relative to column 0 (the first binary).
+# result belongs to. Percentages are relative to the baseline column.
 {
     i=0
     for tmp in $tmps; do
@@ -60,8 +71,16 @@ trap "rm -f $tmps" EXIT
         cat "$tmp"
         i=$((i + 1))
     done
-} | awk -v ncols="$ncols" -v labels="$labels" '
-BEGIN { split(labels, lbl, ",") }
+} | awk -v ncols="$ncols" -v labels="$labels" -v baseline="$baseline" '
+BEGIN {
+    split(labels, lbl, ",")
+    base_col = 0
+    if (baseline != "") {
+        for (i = 1; i <= ncols; i++) {
+            if (lbl[i] == baseline) { base_col = i - 1; break }
+        }
+    }
+}
 
 /^FILE [0-9]+$/ { cur = $2 + 0; next }
 
@@ -92,15 +111,15 @@ END {
         printf "-------:|"
     printf "\n"
 
-    # Data rows — column 0 is the baseline, the rest show score (+X%)
+    # Data rows — base_col is the baseline, the rest show score (+X%)
     for (r = 0; r < norder; r++) {
         k = order[r]
         b = (k == "SCORE") ? "**" : ""
         printf "| %s%s%s", b, k, b
-        base = score[k, 0] + 0
+        base = score[k, base_col] + 0
         for (i = 0; i < ncols; i++) {
             v = score[k, i] + 0
-            if (i == 0 || base == 0) {
+            if (i == base_col || base == 0) {
                 printf " | %s%d%s", b, v, b
             } else {
                 pct = (v - base) / base * 100
