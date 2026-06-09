@@ -8,7 +8,7 @@ version=`cat VERSION`
 if [ "$1" = "-h" ] ; then
     echo "release.sh [release_list]"
     echo ""
-    echo "release_list: extras binary win_binary cosmo_binary quickjs"
+    echo "release_list: extras binary win_binary cosmo_binary macos_binary quickjs"
 
     exit 1
 fi
@@ -146,11 +146,34 @@ cp readme-cosmo.txt $outdir/readme.txt
 fi
 
 #################################################"
+# macOS binary release
+
+if echo $release_list | grep -w -q macos_binary ; then
+
+arch=$(uname -m)
+d="quickjs-macos-${arch}-${version}"
+outdir="/tmp/${d}"
+
+rm -rf $outdir
+mkdir -p $outdir
+
+make clean
+make -j$(sysctl -n hw.logicalcpu) CONFIG_LTO=y qjs run-test262
+strip qjs run-test262
+cp qjs run-test262 $outdir
+
+( cd /tmp/$d && rm -f ../${d}.zip && zip -r ../${d}.zip . )
+
+make clean
+
+fi
+
+#################################################"
 # quickjs
 
 if echo $release_list | grep -w -q quickjs ; then
 
-make build_doc
+PATH="/opt/homebrew/opt/texinfo/bin:$PATH" make doc/quickjs.html
 
 d="quickjs-${version}"
 outdir="/tmp/${d}"
@@ -176,7 +199,7 @@ cp tests/*.js tests/*.patch tests/bjson.c $outdir/tests
 
 cp examples/*.js examples/*.c examples/*.json $outdir/examples
 
-cp doc/quickjs.texi doc/quickjs.pdf doc/quickjs.html \
+cp doc/quickjs.texi doc/quickjs.html \
    $outdir/doc
 
 ( cd /tmp && tar Jcvf /tmp/${d}.tar.xz ${d} )
